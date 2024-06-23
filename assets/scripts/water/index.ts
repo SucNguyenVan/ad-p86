@@ -12,6 +12,9 @@ export default class NewClass extends cc.Component {
   women_node: cc.Node = null;
 
   @property(cc.Node)
+  men_node: cc.Node = null;
+
+  @property(cc.Node)
   countdown_node: cc.Node = null;
 
   @property(cc.Node)
@@ -27,12 +30,18 @@ export default class NewClass extends cc.Component {
 
   startRaftItemPosition: cc.Vec2 = null;
 
+  raftMoveAction: cc.ActionInterval = null;
+
   @property
   moveDuration = 2;
 
   onLoad() {
     // this.addEventForWomen()
     this.bootstrap();
+  }
+
+  protected start(): void {
+    this.addEventForWomen();
   }
 
   bootstrap() {
@@ -42,11 +51,8 @@ export default class NewClass extends cc.Component {
     this.women_node.zIndex = 9;
     this.moveHandler();
     this.startWomenPosition = this.women_node.getPosition();
-    this.node.on("fullRaft", this.upgradeFullRaft, this);
-  }
-
-  protected start(): void {
-    this.addEventForWomen();
+    this.node.on("onUpgradeFullRaft", this.upgradeFullRaft, this);
+    this.node.on("onCollideWithReef", this.collideWithReef, this);
   }
 
   moveHandler() {
@@ -104,7 +110,7 @@ export default class NewClass extends cc.Component {
         raft_node.getComponent("raft")?.displayWomen_node();
       }
       this.countdown_node.active = false;
-      this.hiddenSharkFin();
+      // this.hiddenSharkFin();
       this.addEventForRaftItem(this.raftItem1_node);
       this.addEventForRaftItem(this.raftItem2_node);
       this.raftItem1_node.active = true;
@@ -165,8 +171,57 @@ export default class NewClass extends cc.Component {
   raftMoveToReef() {
     const reefPos = this.reef_node.getPosition();
     const moveDuration = 2;
-    let moveAction = cc.moveTo(moveDuration, reefPos);
-    this.raft_node.runAction(moveAction);
+    this.raftMoveAction = cc.moveTo(moveDuration, reefPos);
+    this.raft_node.runAction(this.raftMoveAction);
+  }
+
+  stopMoveOfRaft() {
+    this.raft_node.stopAction(this.raftMoveAction);
+  }
+
+  breakRaft() {
+    const raft_node = this.node.getChildByName("raft");
+    if (raft_node) {
+      raft_node.getComponent("raft")?.breakRaft();
+    }
+  }
+
+  collideWithReef() {
+    this.stopMoveOfRaft();
+    this.breakRaft();
+    if (this.raft_node) {
+      const nodeMen = this.raft_node.getChildByName("men");
+      if (nodeMen) {
+        this.men_node = nodeMen;
+      }
+      const nodeWomen = this.raft_node.getChildByName("women");
+      if (nodeWomen) {
+        this.women_node = nodeWomen;
+      }
+      // this.men_node = this.raft_node.getChildByName("men");
+      // this.women_node = this.raft_node.getChildByName("women");
+      if (this.men_node && this.women_node) {
+        let positionInWorld1 = this.raft_node.convertToWorldSpaceAR(
+          cc.v2(0, this.raft_node.height / 2 + 300)
+        );
+        let positionInBackground1 =
+          this.node.convertToNodeSpaceAR(positionInWorld1);
+        this.men_node.setParent(this.node);
+        // console.log({ positionInBackground1 });
+        this.men_node.setPosition(positionInBackground1);
+        this.men_node.active = true;
+
+        // Di chuyển women_node sang bên trái node bè
+        let positionInWorld2 = this.raft_node.convertToWorldSpaceAR(
+          cc.v2(-this.raft_node.width / 2 - 300, 0)
+        );
+        let positionInBackground2 =
+          this.node.convertToNodeSpaceAR(positionInWorld2);
+        this.women_node.setParent(this.node);
+        this.women_node.setPosition(positionInBackground2);
+        this.women_node.active = true;
+      }
+    }
   }
   // up(dt) {}
 }
