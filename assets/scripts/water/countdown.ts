@@ -29,6 +29,7 @@ export default class CountdownClass extends cc.Component {
     }
     if (this.timeRemaining <= 0) {
       this.unschedule(this.updateTimer);
+      this.node.parent.emit("onOvertimeCountdown")
     }
   }
 

@@ -21,9 +21,6 @@ export default class RaftClass extends cc.Component {
   men_node: cc.Node = null;
   @property(cc.Node)
   women_node: cc.Node = null;
-  @property(cc.Collider)
-  collider: cc.Collider;
-
   @property
   raftLevel: number = 1;
 

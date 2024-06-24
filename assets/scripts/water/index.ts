@@ -26,6 +26,14 @@ export default class NewClass extends cc.Component {
   @property(cc.Node)
   reef_node: cc.Node = null;
 
+  @property(cc.Node)
+  lifebouy_node: cc.Node = null;
+
+  @property(cc.Node)
+  overlay_node: cc.Node = null;
+
+  validDistanceOfRaftAction: number = 70
+
   startWomenPosition: cc.Vec2 = null;
 
   startRaftItemPosition: cc.Vec2 = null;
@@ -53,6 +61,19 @@ export default class NewClass extends cc.Component {
     this.startWomenPosition = this.women_node.getPosition();
     this.node.on("onUpgradeFullRaft", this.upgradeFullRaft, this);
     this.node.on("onCollideWithReef", this.collideWithReef, this);
+    this.node.on("onOvertimeCountdown", this.displayDownloadOverlay, this)
+    if (this.lifebouy_node) {
+      this.lifebouy_node.active = false;
+    }
+    this.setUpOverlay()
+  }
+
+  setUpOverlay(){
+    this.overlay_node.on(cc.Node.EventType.TOUCH_START, (event: cc.Event.EventTouch )=> {
+      event.stopPropagation()
+    }, this)
+    this.overlay_node.zIndex = 10
+    this.overlay_node.active = false
   }
 
   moveHandler() {
@@ -76,7 +97,6 @@ export default class NewClass extends cc.Component {
 
   hiddenSharkFin() {
     const sharkFin1 = this.node.getChildByName("sharkFin");
-    console.log({ sharkFin1 });
     if (sharkFin1) {
       sharkFin1.active = false;
     }
@@ -102,7 +122,7 @@ export default class NewClass extends cc.Component {
     );
     const raftPosition = this.raft_node.getPosition();
     const distancePosition = currentTouchCancelPosition.sub(raftPosition).mag();
-    if (distancePosition <= 50) {
+    if (distancePosition <= this.validDistanceOfRaftAction) {
       this.handler_node.active = false;
       this.women_node.active = false;
       const raft_node = this.node.getChildByName("raft");
@@ -152,7 +172,7 @@ export default class NewClass extends cc.Component {
     );
     const raftPosition = this.raft_node.getPosition();
     const distancePosition = currentTouchCancelPosition.sub(raftPosition).mag();
-    if (distancePosition <= 50) {
+    if (distancePosition <= this.validDistanceOfRaftAction) {
       event.target.active = false;
       const raft_node = this.node.getChildByName("raft");
       if (raft_node) {
@@ -186,42 +206,82 @@ export default class NewClass extends cc.Component {
     }
   }
 
+  showLifebouy() {
+    this.lifebouy_node.active = true;
+    const newPositionOfHand = this.lifebouy_node.convertToWorldSpaceAR(
+      cc.v2(0, 100)
+    );
+    const positionHandInNode =
+      this.node.convertToNodeSpaceAR(newPositionOfHand);
+    this.handler_node.setPosition(positionHandInNode);
+    this.handler_node.stopAllActions();
+    this.handler_node.active = true;
+    this.lifebouy_node.on(
+      cc.Node.EventType.TOUCH_START,
+      this.lifebouyMoveToCharacters,
+      this
+    );
+  }
+
+  lifebouyMoveToCharacters(event: cc.Event.EventTouch) {
+    const menPos = this.men_node.getPosition();
+    const moveDuration = 0.5;
+    const moveAction = cc.moveTo(moveDuration, menPos);
+    this.lifebouy_node.runAction(moveAction);
+    this.handler_node.active = false;
+    setTimeout(()=>{
+      this.displayDownloadOverlay(true)
+    }, 1500)
+  }
+
+  actionWithCharacter() {
+    const nodeMen = this.raft_node.getChildByName("men");
+    if (nodeMen) {
+      this.men_node = nodeMen;
+    }
+    const nodeWomen = this.raft_node.getChildByName("women");
+    if (nodeWomen) {
+      this.women_node = nodeWomen;
+    }
+    // this.men_node = this.raft_node.getChildByName("men");
+    // this.women_node = this.raft_node.getChildByName("women");
+    if (this.men_node && this.women_node) {
+      let positionInWorld1 = this.raft_node.convertToWorldSpaceAR(
+        cc.v2(0, this.raft_node.height / 2 + 300)
+      );
+      let positionInBackground1 =
+        this.node.convertToNodeSpaceAR(positionInWorld1);
+      this.men_node.setParent(this.node);
+      // console.log({ positionInBackground1 });
+      this.men_node.setPosition(positionInBackground1);
+      this.men_node.zIndex = 9;
+      this.men_node.active = true;
+
+      // Di chuyển women_node sang bên trái node bè
+      let positionInWorld2 = this.raft_node.convertToWorldSpaceAR(
+        // cc.v2(-this.raft_node.width / 2 - 300, 0)
+        cc.v2(50, this.raft_node.height / 2 + 300)
+      );
+      let positionInBackground2 =
+        this.node.convertToNodeSpaceAR(positionInWorld2);
+      this.women_node.setParent(this.node);
+      this.women_node.setPosition(positionInBackground2);
+      this.women_node.zIndex = 9;
+      this.women_node.active = true;
+    }
+  }
+
   collideWithReef() {
     this.stopMoveOfRaft();
     this.breakRaft();
     if (this.raft_node) {
-      const nodeMen = this.raft_node.getChildByName("men");
-      if (nodeMen) {
-        this.men_node = nodeMen;
-      }
-      const nodeWomen = this.raft_node.getChildByName("women");
-      if (nodeWomen) {
-        this.women_node = nodeWomen;
-      }
-      // this.men_node = this.raft_node.getChildByName("men");
-      // this.women_node = this.raft_node.getChildByName("women");
-      if (this.men_node && this.women_node) {
-        let positionInWorld1 = this.raft_node.convertToWorldSpaceAR(
-          cc.v2(0, this.raft_node.height / 2 + 300)
-        );
-        let positionInBackground1 =
-          this.node.convertToNodeSpaceAR(positionInWorld1);
-        this.men_node.setParent(this.node);
-        // console.log({ positionInBackground1 });
-        this.men_node.setPosition(positionInBackground1);
-        this.men_node.active = true;
-
-        // Di chuyển women_node sang bên trái node bè
-        let positionInWorld2 = this.raft_node.convertToWorldSpaceAR(
-          cc.v2(-this.raft_node.width / 2 - 300, 0)
-        );
-        let positionInBackground2 =
-          this.node.convertToNodeSpaceAR(positionInWorld2);
-        this.women_node.setParent(this.node);
-        this.women_node.setPosition(positionInBackground2);
-        this.women_node.active = true;
-      }
+      this.actionWithCharacter();
+      this.showLifebouy();
     }
   }
-  // up(dt) {}
+
+  displayDownloadOverlay(active:boolean = true){
+    this.overlay_node.active = true
+  }
 }
+// up(dt) {}
