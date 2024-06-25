@@ -40,6 +40,8 @@ export default class NewClass extends cc.Component {
 
   raftMoveAction: cc.ActionInterval = null;
 
+  handMoveAction: cc.ActionInterval = null
+
   @property
   moveDuration = 2;
 
@@ -57,7 +59,8 @@ export default class NewClass extends cc.Component {
     this.raftItem2_node.active = false;
     this.reef_node.active = false;
     this.women_node.zIndex = 9;
-    this.moveHandler();
+    // this.raftItem2_node.zIndex = 9
+    this.moveHandler(this.women_node, this.raft_node, true);
     this.startWomenPosition = this.women_node.getPosition();
     this.node.on("onUpgradeFullRaft", this.upgradeFullRaft, this);
     this.node.on("onCollideWithReef", this.collideWithReef, this);
@@ -76,23 +79,31 @@ export default class NewClass extends cc.Component {
     this.overlay_node.active = false
   }
 
-  moveHandler() {
+  hiddenHand_node(){
+    if(this.handMoveAction){
+      this.handler_node.stopAction(this.handMoveAction)
+      this.handMoveAction = null
+    }
+    this.handler_node.active = false;
+  }
+
+  moveHandler(startNode: cc.Node, destinationNode: cc.Node, isRepeat: boolean) {
     // Lấy vị trí của object A và B
-    let positionA = this.raft_node.getPosition();
-    let positionB = this.women_node.getPosition();
-    this.handler_node.setPosition(positionB);
+    let positionA = startNode.getPosition();
+    let positionB = destinationNode.getPosition();
+    this.handler_node.setPosition(positionA);
     // Di chuyển object C từ A đến B
-    let moveAction = cc.sequence(
-      cc.moveTo(this.moveDuration, positionA),
+    this.handMoveAction = cc.sequence(
+      cc.moveTo(this.moveDuration, positionB),
       cc.callFunc(() => {
         // Sau khi đến B, di chuyển ngay lập tức về A và lặp lại
-        this.handler_node.setPosition(positionB);
-        this.moveHandler(); // Gọi lại hàm để lặp lại quá trình
+        this.handler_node.setPosition(positionA);
+        if(isRepeat){
+          this.moveHandler(startNode, destinationNode, isRepeat); // Gọi lại hàm để lặp lại quá trình
+        }
       })
     );
-
-    // Áp dụng hành động di chuyển cho object C
-    this.handler_node.runAction(moveAction);
+    this.handler_node.runAction(this.handMoveAction);
   }
 
   hiddenSharkFin() {
@@ -123,7 +134,7 @@ export default class NewClass extends cc.Component {
     const raftPosition = this.raft_node.getPosition();
     const distancePosition = currentTouchCancelPosition.sub(raftPosition).mag();
     if (distancePosition <= this.validDistanceOfRaftAction) {
-      this.handler_node.active = false;
+      this.hiddenHand_node()
       this.women_node.active = false;
       const raft_node = this.node.getChildByName("raft");
       if (raft_node) {
@@ -135,6 +146,8 @@ export default class NewClass extends cc.Component {
       this.addEventForRaftItem(this.raftItem2_node);
       this.raftItem1_node.active = true;
       this.raftItem2_node.active = true;
+      this.handler_node.active = true
+      this.moveHandler(this.raftItem2_node, this.raft_node, true)
     } else {
       this.women_node.setPosition(this.startWomenPosition);
     }
@@ -177,6 +190,14 @@ export default class NewClass extends cc.Component {
       const raft_node = this.node.getChildByName("raft");
       if (raft_node) {
         raft_node.getComponent("raft")?.updateLevel();
+        if(event.target === this.raftItem2_node){
+          this.hiddenHand_node()
+          this.handler_node.active = true
+          this.moveHandler(this.raftItem1_node, this.raft_node, true)
+        }
+        if(this.raft_node.getComponent("raft")?.isFullLevel()){
+          this.hiddenHand_node()
+        }
       }
     } else {
       event.target.setPosition(this.startRaftItemPosition);
@@ -205,6 +226,7 @@ export default class NewClass extends cc.Component {
       raft_node.getComponent("raft")?.breakRaft();
     }
   }
+  
 
   showLifebouy() {
     this.lifebouy_node.active = true;
@@ -221,6 +243,16 @@ export default class NewClass extends cc.Component {
       this.lifebouyMoveToCharacters,
       this
     );
+    this.handler_node.stopAllActions()
+    // this.handler_node.getComponent("hand")?.turnOnJumpUpDown()
+    this.jumpUpDown(this.handler_node)
+  }
+
+  jumpUpDown(node:cc.Node){
+    let jumpUp = cc.moveBy(0.5, cc.v2(0, 50)).easing(cc.easeCubicActionOut());
+        let jumpDown = cc.moveBy(0.5, cc.v2(0, -50)).easing(cc.easeCubicActionIn());
+        let jumpSequence = cc.sequence(jumpUp, jumpDown);
+        node.runAction(cc.repeatForever(jumpSequence));
   }
 
   lifebouyMoveToCharacters(event: cc.Event.EventTouch) {

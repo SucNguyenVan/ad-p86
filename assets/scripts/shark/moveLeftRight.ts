@@ -3,7 +3,7 @@ const {ccclass, property} = cc._decorator;
 @ccclass
 export default class NewClass extends cc.Component {
     @property
-    distance: number = 400;
+    distance: number = 250;
 
     @property
     duration: number = 3;
@@ -14,12 +14,28 @@ export default class NewClass extends cc.Component {
 
     move(){
         let moveRight = cc.moveBy(this.duration, cc.v2(this.distance, 0));
-        let rotateLeft = cc.rotateTo(0.1, 90);
+        // Tạo hành động di chuyển từ phải sang trái
         let moveLeft = cc.moveBy(this.duration, cc.v2(-this.distance, 0));
-        let rotateRight = cc.rotateTo(0.1, 270);
-        let moveSequence = cc.sequence(moveRight, rotateLeft, moveLeft, rotateRight);
-        let moveAction = cc.repeatForever(moveSequence);
-        this.node.runAction(moveAction);
+
+        // Tạo hành động lật chiều node (flip) theo trục x
+        let flipRight = cc.callFunc(() => {
+            this.node.scaleX = 1;  // Lật về hướng phải
+        });
+
+        let flipLeft = cc.callFunc(() => {
+            this.node.scaleX = -1; // Lật về hướng trái
+        });
+
+        // Tạo chuỗi hành động di chuyển và lật chiều
+        let sequence = cc.sequence(
+            flipRight,  // Lật về hướng phải
+            moveRight,  // Di chuyển sang phải
+            flipLeft,   // Lật về hướng trái
+            moveLeft    // Di chuyển sang trái
+        );
+
+        // Lặp lại chuỗi hành động mãi mãi
+        this.node.runAction(cc.repeatForever(sequence));
     }
 
     // update (dt) {}

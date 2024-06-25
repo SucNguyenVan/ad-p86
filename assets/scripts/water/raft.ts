@@ -98,5 +98,9 @@ export default class RaftClass extends cc.Component {
     this.women_node.active = false;
     this.raftBreak_node.active = true;
   }
+
+  isFullLevel(): boolean{
+    return this.raftLevel === this.maxLevelRaft
+  }
   // update (dt) {}
 }

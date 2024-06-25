@@ -1,30 +1,43 @@
-const {ccclass, property} = cc._decorator;
+const { ccclass, property } = cc._decorator;
 
 @ccclass
 export default class NewClass extends cc.Component {
-    @property
-    distance: number = 100;
+  @property
+  distance: number = 250;
 
-    @property
-    duration: number = 3;
+  @property
+  duration: number = 2;
 
-    // LIFE-CYCLE CALLBACKS:
+  // LIFE-CYCLE CALLBACKS:
 
-    // onLoad () {}
+  // onLoad () {}
 
-    start () {
-        this.move()
-    }
+  start() {
+    this.move();
+  }
 
-    move(){
-        let moveDown = cc.moveBy(this.duration, cc.v2(0, -this.distance));
-        let rotateDown = cc.rotateTo(0.1, 180);
-        let moveUp = cc.moveBy(this.duration, cc.v2(0, this.distance));
-        let rotateUp = cc.rotateTo(0.1, 0);
-        let moveSequence = cc.sequence(moveDown, rotateDown, moveUp, rotateUp);
-        let moveAction = cc.repeatForever(moveSequence);
-        this.node.runAction(moveAction);
-    }
+  move() {
+    let moveDown = cc.moveBy(this.duration, cc.v2(0, -this.distance));
+    let moveUp = cc.moveBy(this.duration, cc.v2(0, this.distance));
+    let flipDown = cc.callFunc(() => {
+      this.node.scaleX = 1; // Lật về hướng down
+    });
 
-    // update (dt) {}
+    let flipUp = cc.callFunc(() => {
+      this.node.scaleX = -1; // Lật về hướng up
+    });
+
+    // Tạo chuỗi hành động di chuyển và lật chiều
+    let sequence = cc.sequence(
+      flipDown, // Lật về hướng down
+      moveDown, // Di chuyển sang down
+      flipUp, // Lật về hướng up
+      moveUp // Di chuyển sang up
+    );
+    cc.sys.os
+    // Lặp lại chuỗi hành động mãi mãi
+    this.node.runAction(cc.repeatForever(sequence));
+  }
+
+  // update (dt) {}
 }
